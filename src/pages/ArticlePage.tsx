@@ -30,7 +30,7 @@ export default function ArticlePage() {
       return
     }
 
-    fetch(article.filePath)
+    fetch(import.meta.env.BASE_URL + article.filePath.replace(/^\//, ''))
       .then((res) => res.text())
       .then((text) => {
         setContent(text)
