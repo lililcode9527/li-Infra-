@@ -1,4 +1,4 @@
-export type Category = 'model-insight' | 'inference-opt' | 'framework' | 'hardware'
+export type Category = 'model-insight' | 'inference-opt' | 'framework' | 'operator-opt'
 
 export interface CategoryInfo {
   id: Category
@@ -45,9 +45,9 @@ export const categories: CategoryInfo[] = [
     icon: 'Code2',
   },
   {
-    id: 'hardware',
-    name: '硬件适配',
-    description: 'Ascend NPU、CUDA、Triton 等硬件平台适配与优化实践',
+    id: 'operator-opt',
+    name: '算子优化',
+    description: 'CUDA/Triton/Ascend 算子开发、融合优化与性能调优实践',
     icon: 'Cpu',
   },
 ]

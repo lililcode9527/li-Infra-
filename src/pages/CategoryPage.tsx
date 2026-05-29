@@ -16,7 +16,7 @@ const categoryAccents: Record<string, string> = {
   'model-insight': '#d2991d',
   'inference-opt': '#3fb950',
   framework: '#58a6ff',
-  hardware: '#f78166',
+  'operator-opt': '#f78166',
 }
 
 export default function CategoryPage() {
