@@ -6,7 +6,7 @@ import { categories, categoryMap } from '../types'
 const categoryAccents: Record<string, string> = {
   'model-insight': '#d2991d',
   'inference-opt': '#3fb950',
-  framework: '#58a6ff',
+  'other': '#58a6ff',
   'operator-opt': '#f78166',
 }
 

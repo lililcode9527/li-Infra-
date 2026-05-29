@@ -37,6 +37,18 @@ export const articles: ArticleMeta[] = [
     filePath: '/articles/GLM5_架构与优化分析.md',
     category: 'model-insight',
   },
+  {
+    id: 'lightning-indexer',
+    title: 'Lightning Indexer 算子深度解析：Tiling 切分、流水线优化与 Cube/Vector 并行',
+    description:
+      '深入剖析 Ascend NPU 上 Lightning Indexer 算子的五缓冲 L1 流水线、双缓冲 L0 流水线、Ping-Pong UB 并发、MicroAPI 融合计算、Histogram-based TopK 等核心优化机制，揭示如何将 Cube 和 Vector 利用率推至极限。',
+    tags: ['Lightning Indexer', 'DSA', 'Ascend', 'Tiling', 'Cube/Vector', 'Pipeline'],
+    date: '2026-05-29',
+    readingTime: 40,
+    slug: 'lightning-indexer',
+    filePath: '/articles/lightning_indexer_算子优化深度解析.md',
+    category: 'operator-opt',
+  },
 ]
 
 export function getArticleBySlug(slug: string): ArticleMeta | undefined {

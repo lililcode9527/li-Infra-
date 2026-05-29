@@ -1,4 +1,4 @@
-export type Category = 'model-insight' | 'inference-opt' | 'framework' | 'operator-opt'
+export type Category = 'model-insight' | 'inference-opt' | 'operator-opt' | 'other'
 
 export interface CategoryInfo {
   id: Category
@@ -39,16 +39,16 @@ export const categories: CategoryInfo[] = [
     icon: 'Zap',
   },
   {
-    id: 'framework',
-    name: '框架源码',
-    description: 'vLLM、SGLang 等推理框架源码解读与架构分析',
-    icon: 'Code2',
-  },
-  {
     id: 'operator-opt',
     name: '算子优化',
     description: 'CUDA/Triton/Ascend 算子开发、融合优化与性能调优实践',
     icon: 'Cpu',
+  },
+  {
+    id: 'other',
+    name: '其他技术',
+    description: '推理框架源码解读、工程实践、工具链与杂项技术分享',
+    icon: 'Code2',
   },
 ]
 
