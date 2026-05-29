@@ -37,11 +37,7 @@ export default function HeroSection() {
           className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
           style={{ color: isDark ? '#e6edf3' : '#1f2328' }}
         >
-          大模型基础设施
-          <br />
-          <span className="bg-gradient-to-r from-amber-400 to-emerald-400 bg-clip-text text-transparent">
-            深度技术洞察
-          </span>
+          技术文档
         </h1>
         <div className="mx-auto mb-8 h-1 w-20 rounded-full bg-gradient-to-r from-amber-500 to-emerald-500" />
         <p
