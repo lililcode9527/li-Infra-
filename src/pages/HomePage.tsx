@@ -1,4 +1,5 @@
-import { Brain, Zap, Code2, Cpu } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Brain, Zap, Code2, Cpu, ArrowRight } from 'lucide-react'
 import HeroSection from '../components/HeroSection'
 import ArticleCard from '../components/ArticleCard'
 import { useThemeStore } from '../store/themeStore'
@@ -29,13 +30,15 @@ export default function HomePage() {
 
       {categories.map((cat) => {
         const catArticles = getArticlesByCategory(cat.id)
-        if (catArticles.length === 0) return null
         const Icon = iconMap[cat.icon] || Brain
         const accent = categoryAccents[cat.id] || '#d2991d'
 
         return (
-          <section key={cat.id} id={`category-${cat.id}`} className="mx-auto max-w-4xl px-6 pb-16">
-            <div className="mb-6 flex items-center gap-3">
+          <section key={cat.id} className="mx-auto max-w-4xl px-6 pb-16">
+            <Link
+              to={`/category/${cat.id}`}
+              className="mb-6 flex items-center gap-3 group"
+            >
               <Icon size={22} style={{ color: accent }} />
               <h2
                 className="text-xl font-bold tracking-tight"
@@ -49,29 +52,43 @@ export default function HomePage() {
               >
                 {cat.description}
               </span>
-            </div>
-            <div className="grid gap-6 md:grid-cols-2">
-              {catArticles.map((article, index) => (
-                <ArticleCard key={article.id} article={article} index={index} />
-              ))}
-            </div>
+              <ArrowRight
+                size={16}
+                className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ color: accent }}
+              />
+            </Link>
+
+            {catArticles.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2">
+                {catArticles.map((article, index) => (
+                  <ArticleCard key={article.id} article={article} index={index} />
+                ))}
+              </div>
+            ) : (
+              <div
+                className="rounded-xl border p-8 text-center"
+                style={{
+                  borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                  backgroundColor: isDark ? '#161b22' : '#f6f8fa',
+                }}
+              >
+                <Icon size={32} className="mx-auto mb-3" style={{ color: isDark ? '#484f58' : '#8b949e' }} />
+                <p className="text-sm" style={{ color: isDark ? '#484f58' : '#8b949e' }}>
+                  「{cat.name}」分类的文章正在编写中，敬请期待
+                </p>
+                <Link
+                  to={`/category/${cat.id}`}
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium"
+                  style={{ color: accent }}
+                >
+                  查看分类详情 <ArrowRight size={14} />
+                </Link>
+              </div>
+            )}
           </section>
         )
       })}
-
-      <section className="mx-auto max-w-4xl px-6 pb-20 text-center">
-        <div
-          className="rounded-xl border p-10"
-          style={{
-            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-            backgroundColor: isDark ? '#161b22' : '#f6f8fa',
-          }}
-        >
-          <p className="text-sm" style={{ color: isDark ? '#484f58' : '#8b949e' }}>
-            更多分类文章正在编写中 · 推理优化 · 框架源码 · 硬件适配
-          </p>
-        </div>
-      </section>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useThemeStore } from '../store/themeStore'
 import { categories } from '../types'
 import { Brain, Zap, Code2, Cpu } from 'lucide-react'
@@ -7,6 +8,13 @@ const iconMap: Record<string, typeof Brain> = {
   Zap,
   Code2,
   Cpu,
+}
+
+const categoryAccents: Record<string, string> = {
+  'model-insight': '#d2991d',
+  'inference-opt': '#3fb950',
+  framework: '#58a6ff',
+  hardware: '#f78166',
 }
 
 export default function HeroSection() {
@@ -50,21 +58,22 @@ export default function HeroSection() {
         <div className="mx-auto mt-12 grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-4">
           {categories.map((cat) => {
             const Icon = iconMap[cat.icon] || Brain
+            const accent = categoryAccents[cat.id] || '#d2991d'
             return (
-              <a
+              <Link
                 key={cat.id}
-                href={`#category-${cat.id}`}
+                to={`/category/${cat.id}`}
                 className="flex flex-col items-center gap-2 rounded-xl border p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                 style={{
                   borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
                   backgroundColor: isDark ? '#161b22' : '#f6f8fa',
                 }}
               >
-                <Icon size={22} className="text-amber-500" />
+                <Icon size={22} style={{ color: accent }} />
                 <span className="text-sm font-medium" style={{ color: isDark ? '#e6edf3' : '#1f2328' }}>
                   {cat.name}
                 </span>
-              </a>
+              </Link>
             )
           })}
         </div>
