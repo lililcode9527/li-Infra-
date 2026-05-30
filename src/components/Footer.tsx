@@ -15,7 +15,7 @@ export default function Footer() {
           className="text-sm"
           style={{ color: isDark ? '#484f58' : '#8b949e' }}
         >
-          AI Infra · 大模型基础设施深度技术洞察 · 基于 vllm / vllm-ascend 源码分析
+          AI Infra · 大模型基础设施深度技术洞察
         </p>
       </div>
     </footer>
