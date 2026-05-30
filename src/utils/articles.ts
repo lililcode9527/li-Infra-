@@ -49,6 +49,30 @@ export const articles: ArticleMeta[] = [
     filePath: '/articles/lightning_indexer_算子优化深度解析.md',
     category: 'operator-opt',
   },
+  {
+    id: 'moe-distribute-dispatch-v2',
+    title: 'MoeDistributeDispatchV2 算子深度解析：通算融合架构、RDMA 全互联与双缓冲同步',
+    description:
+      '深入剖析昇腾 NPU 上 MoeDistributeDispatchV2 算子的 AIV+AICPU 融合架构、RDMA 全互联通信、Token 重排与索引计算、分核双循环同步、双缓冲轮转机制、Fullmesh/Hierarchy 通信算法选择及量化模式，揭示 MoE 专家并行推理通信优化的核心机制。',
+    tags: ['MoeDistributeDispatchV2', 'MoE', 'EP', 'RDMA', '通算融合', 'Ascend', '双缓冲'],
+    date: '2026-05-30',
+    readingTime: 35,
+    slug: 'moe-distribute-dispatch-v2',
+    filePath: '/articles/MoeDistributeDispatchV2_算子深度解析.md',
+    category: 'operator-opt',
+  },
+  {
+    id: 'moe-distribute-combine-v2',
+    title: 'MoeDistributeCombineV2 算子深度解析',
+    description:
+      '深入解析 MoeDistributeCombineV2 算子的逆向 AllToAll、Token 重排与加权求和核心流程，揭示 MoE 推理闭环的回收半程。',
+    tags: ['CombineV2', 'MoE', 'AllToAllV', '加权求和', 'Ascend'],
+    date: '2026-05-30',
+    readingTime: 20,
+    slug: 'moe-distribute-combine-v2',
+    filePath: '/articles/MoeDistributeCombineV2_算子深度解析.md',
+    category: 'operator-opt',
+  },
 ]
 
 export function getArticleBySlug(slug: string): ArticleMeta | undefined {
