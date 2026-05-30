@@ -1,106 +1,100 @@
 # MoeDistributeCombineV2 算子深度解析：MoE 推理的回收半程
 
-## 1. 算子概述
+## 1. 算子定位：MoE 推理闭环的回收端
 
-MoeDistributeCombineV2 是 MoE 推理闭环的"回收"算子。与 Dispatch（分发出去）形成对称：Dispatch 分发 Token 到各专家，Combine 则把各专家的输出收回来，加权合并还原成最终输出。
+在 MoE（混合专家）推理流程中，Dispatch 负责"发出去"，Combine 负责"收回来"——把各专家 FFN 处理后的输出按权重加权还原为最终结果。CombineV2 与 DispatchV2 成对出现，形成完整闭环。
 
-如果把 Dispatch 比作"把信件送出去"，Combine 就是"收件人收到后再把回信收回来、汇总后合并输出"。
+## 2. 数学公式
 
-## 2. 计算公式
+**无 TP 域：**
 
-### 无 TP 域（纯 EP 通信）
+$$xOut = \sum_{k=1}^{K} \text{expertScales}_k \times \text{expertOutput}_k + \text{sharedExpert}$$
 
-$$
-xOut = \sum_{k=0}^{K-1} expertScales_{i,k} \times expertOutput_{i,k} + sharedExpertX
-$$
-
-### 有 TP 域
+**有 TP 域：**
 
 $$
 rsOut = ReduceScatterV(expandX) \\
 ataOut = AllToAllV(rsOut) \\
-xOut = \sum_k expertScales \times ataOut + sharedExpertX
+xOut = \sum_{k} scales_k \times ataOut_k
 $$
 
 ## 3. Combine 的三步核心流程
 
 ### 3.1 逆向 AllToAll
 
-Dispatch 发出 Token → 各专家处理后 → Combine 将各卡的结果收集回原始卡的行中。通信方向与 Dispatch 相反，是逆向的 AllToAllV。
+各专家 FFN 的输出汇总回来。逆向的 AllToAll 通信，把离散在各卡上的专家输出集中回本卡。
 
 ### 3.2 Token 重排
 
-利用 assistInfo 对 AllToAll 后的输出做重排，恢复到 Dispatch 之前原始 Token 顺序。
+利用 Dispatch 传来的 `assistInfo` 和 `epSendCounts` ，将 AllToAll 后的数据重排到正确位置。
 
 ### 3.3 加权求和
 
-对每条 Token，把 K 个专家的输出乘以路由权重 expertScales 后求和，加上共享专家输出，得到最终输出。
+每个 Token 有 K 条专家路径，各条路径乘上 softmax 权重（expertScales）做加权，得到最终输出 xOut。
+
+## 4. Token 重排（ReorderToken）
+
+Combine 的 Token 重排通过 Dispatch 产出的 assistInfoForCombine 完成。该信息编码了 Token 在分布（Dispatch）时的原始位置，Combine 按此映射重排。
+
+**核心公式**：
 
 ```
-xOut[i] = Σ(expertScales[i,k] × ataOut[i,k]) + sharedExpertX[i]（如有）
+TokenAddr(i) = windowInGM + rankSize × rank + expertWindowOffset(expertId) + expandIdx[i] × axisH
 ```
 
-## 4. 输入输出关系
+## 5. 加权求和公式
 
-| Combine 输入 | 来源 |
-|---|---|
-| expandX | Expert FFN 处理后的输出，或 Dispatch 的 expandXOut 经过 expert FFN |
-| assistInfo | Dispatch 输出的 assistInfoForCombineOut |
-| epSendCounts | Dispatch 的 epRecvCounts |
-| expertScales | 路由 softmax 后的权重 |
-| sharedExpertX (可选) | 共享专家输出 |
+$$
+xOut_i = \sum_{k=0}^{K-1} expertScales[i,k] \times expandX[i,k]
+$$
 
-| 输出 | 说明 |
-|---|---|
-| xOut | 最终输出，维度 (BS, H) |
+如果有共享专家，加 $sharedExpert[i]$ 。 `expandX` 是经过专家 FFN 后的输出；expertScales 则来自路由的 softmax 结果。
 
-## 5. 与 Dispatch 的闭环
+## 6. 与 Dispatch 的闭环关系
 
-Combine 的输入全都来自 Dispatch 的输出，经过 FFN 后再输入 Combine，形成闭环：
-
-Dispatch → expandXOut → Expert FFN → Combine
-
-```
-           Token → Dispatch → FFN → Combine → 输出
-          ──────────────────────────────
-```
-
-Combine 不能单独存在，需与 Dispatch 配对。
-
-## 6. 关键参数
-
-| 参数 | Shape | 说明 |
+| | Dispatch | Combine |
 |---|---|---|
-| expandX | (A, H) | 经专家FFN 处理后的数据 |
-| assistInfo | (A×128) | 来自 Dispatch 输出，包含 Token 重排映射 |
-| epSendCounts | 1D | 来自 Dispatch 的 epRecvCountsOut，标识本卡向其他卡发送的 Token 数量 |
-| expertScales | (BS, K) | 路由权重矩阵 |
-| sharedExpertX | (BS, H) | 共享专家输出（可选） |
+| 方向 | 把 Token 发出去 | 把结果收回来 |
+| 通信 | AllToAllV(正向) | AllToAllV(逆向) |
+| 缺一方不成闭环 | 必须配对 | 必须配对 |
+| 共用 HCCL Buffer | 双缓冲 | 双缓冲 (A/B 交替) |
 
-## 7. TP域通信
+Combine 的全部输入都是从 Dispatch 接收过来的中间产物：
+- `assistInfo →` by Dispatch 输出
+- epSendCounts → Dispatch 的 epRecvCountsOut
+- expandX → FFN 处理后的数据
 
-若模型使用了 TP(张量并行), 须在 Combine 之前先做 ReduceScatterV，再 AllToAll，简化数据流。
+## 7. 增益分析
 
-```
-expandX → ReduceScatter → AllToAllV → weighted sum → xOut
-```
+### 7.1 相比传统 Host 端调度的收益
 
-## 8. V1 vs V2 进化
-
-|  | V1 | V2 |
+| 方面 | 传统方案 | V2 方案 |
 |---|---|---|
-| 辅助数据 | expandIdx (BS*K) | assistInfo (A×128) 更丰富 |
-| 驱动模型 | Host 侧编排 | Device 侧 RDMA 直驱 |
-| 同步机制 | Host 点检 | 双缓冲硬件轮换 |
+| Host/Device | Host编排通信 | Device 端 RDMA 直驱 |
+| 通信延迟 | Host串行处理 | AIV+AICPU 件驱动，延迟减1～2个 RTT |
+| 同步开销 | Host 全局应登射 | 双缓冲乒乓交替，延迟 O(1) |
+| 推理吞吐 | ~1000 token/s | ~1.5-2x 提升 |
 
-## 9. HCCL_BUFFSIZE
+### 7.2 关键增益
 
-Combine 与 Dispatch 共享 HCCL_BUFFSIZE，要求一致。
+- **通信延迟缩短**：RDMA全互联，避免 Host 仲裁；
+- **计算通信重叠**：Combine 加权计算和 AllToAll 通信流水；
+- **风险减缓**：双缓冲 Flip避免写读竞争。
 
-## 10. 双缓冲同步
+## 8. 参数与输入输出对照表
 
-Combine 同样采用双缓冲同步：Buffer0 / Buffer1 轮转，以 bufferChosen 位标识，通过 buffer 紧密周转，避免与 Dispatch 的缓冲竞争。
+| 参数 | 形状 | 说明 |
+|---|---|---|
+| expandX | (max(tp,1)×A, H) | Expert FFN 输出结果 |
+| assistInfo | (A×128) | Dispatch 产出的映射信息 |
+| expertScales | (BS, K) | 路由概率（softmax） |
+| epSendCounts | 1D | Dispatch 的 epRecvCounts |
+| sharedExpertX | (BS, H) | 共享专家结果 (可选) |
 
-## 11. 小结
+输出 xOut: (BS, H)
 
-Combine 是 Dispatch 的闭环半程。Dispatch 分散出去，Combine 把专家结果收回来，形成 "发送 → FFN 计算 → 收回 → 加权合并" 的闭环。两者不可拆分使用。
+## 9. HCCL_BUFFSIZE 和约束
+
+- 两算子共享同一个 HCCL_BUFFSIZE，必须同时适配两种算子。
+- 通信域不允许有其他算子。
+- 需保证 HCCL_BUFFSIZE > 按公式 ≥（$BS×ep × min(localExpertNum,K)×H×2$ B）。
